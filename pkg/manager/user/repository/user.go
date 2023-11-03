@@ -50,3 +50,7 @@ func (r *repository) GetUserByName(ctx context.Context, username string) (*User,
 func (r *repository) Migrate() error {
 	return r.AutoMigrate(&User{})
 }
+
+func (r *repository) MigrateDown() error {
+	return r.Migrator().DropTable(&User{})
+}

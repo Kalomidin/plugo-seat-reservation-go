@@ -64,31 +64,15 @@ func (repo *reservationRepository) GetReservationForEventAndUser(ctx context.Con
 	return &reservation, nil
 }
 
-func (repo *reservationRepository) HandleWithTransaction(ctx context.Context, fn ReservationTransaction) error {
-	tx := repo.Begin()
-	if tx.Error != nil {
-		tx.Rollback()
-		fmt.Printf("committing transaction4\n")
-		return tx.Error
+func (repo *reservationRepository) DeleteReservation(ctx context.Context, id uuid.UUID) error {
+	resp := repo.Model(&Reservation{}).Where("id = ? and deleted_at is null", id).Update("deleted_at", time.Now())
+	if resp.Error != nil {
+		return resp.Error
 	}
-
-	commit, err := fn(ctx, NewReservationRepository(tx))
-	if err != nil || !commit {
-		tx.Rollback()
-		fmt.Printf("committing transaction2\n")
-		return err
-	}
-
-	err = tx.Commit().Error
-	if err != nil {
-		fmt.Printf("Error while committing transaction\n")
-		return err
+	if resp.RowsAffected != 1 {
+		return fmt.Errorf("more than one reservation is being deleted")
 	}
 	return nil
-}
-
-func (repo *reservationRepository) DeleteReservation(ctx context.Context, id uuid.UUID) error {
-	return repo.Model(&Reservation{}).Where("id = ? and deleted_at is null", id).Update("deleted_at", time.Now()).Error
 }
 
 func (repo *reservationRepository) Migrate() error {
@@ -96,5 +80,9 @@ func (repo *reservationRepository) Migrate() error {
 		return err
 	}
 	return repo.
-		Exec(`CREATE UNIQUE INDEX idx_seat_id_deleted_at_null ON reservation(seat_id) WHERE deleted_at IS NULL;`).Error
+		Exec(`CREATE UNIQUE INDEX  IF NOT EXISTS idx_seat_id_deleted_at_null ON reservation(seat_id) WHERE deleted_at IS NULL;`).Error
+}
+
+func (repo *reservationRepository) MigrateDown() error {
+	return repo.Migrator().DropTable(&Reservation{})
 }

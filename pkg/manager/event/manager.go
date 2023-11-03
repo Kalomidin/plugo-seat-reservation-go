@@ -13,13 +13,15 @@ type eventManager struct {
 	eventRepo       repository.EventRepository
 	seatRepo        repository.SeatRepository
 	reservationRepo repository.ReservationRepository
+	transactionDB   repository.TransactionDB
 }
 
-func NewEventManager(eventRepo repository.EventRepository, seatRepo repository.SeatRepository, reservationRepo repository.ReservationRepository) EventManager {
+func NewEventManager(eventRepo repository.EventRepository, seatRepo repository.SeatRepository, reservationRepo repository.ReservationRepository, transactionDB repository.TransactionDB) EventManager {
 	return &eventManager{
 		eventRepo,
 		seatRepo,
 		reservationRepo,
+		transactionDB,
 	}
 }
 
@@ -84,12 +86,18 @@ func (m *eventManager) GetEvent(ctx context.Context, req GetEventRequest) (*Even
 func (m *eventManager) CreateReservation(ctx context.Context, req CreateReservationRequest) (*CreateReservationResponse, error) {
 	var res repository.Reservation
 	var seat repository.Seat
-	if err := m.reservationRepo.HandleWithTransaction(ctx, func(ctx context.Context, reservationRepo repository.ReservationRepository) (bool, error) {
+	if err := m.transactionDB.HandleWithTransaction(ctx, func(
+		ctx context.Context,
+		eventRepo repository.EventRepository,
+		seatRepo repository.SeatRepository,
+		reservationRepo repository.ReservationRepository,
+	) (bool, error) {
 		existingReservation, err := reservationRepo.GetReservationForEventAndUser(ctx, req.EventID, req.UserID)
+
 		if err != gorm.ErrRecordNotFound {
 			if err == nil {
 				res = *existingReservation
-				_seat, err := m.seatRepo.GetSeat(ctx, req.SeatID)
+				_seat, err := seatRepo.GetSeat(ctx, req.SeatID)
 				if err != nil {
 					return false, err
 				}
@@ -99,10 +107,11 @@ func (m *eventManager) CreateReservation(ctx context.Context, req CreateReservat
 			return false, err
 		}
 
-		_seat, err := m.seatRepo.GetSeat(ctx, req.SeatID)
+		_seat, err := seatRepo.GetSeat(ctx, req.SeatID)
 		if err != nil {
 			return false, err
 		}
+
 		if _seat.Status != repository.SeatStatusAvailable {
 			return false, fmt.Errorf("seat is not available")
 		}
@@ -118,9 +127,10 @@ func (m *eventManager) CreateReservation(ctx context.Context, req CreateReservat
 
 		_seat.Status = repository.SeatStatusReserved
 
-		if err := m.seatRepo.UpdateSeat(ctx, _seat); err != nil {
+		if err := seatRepo.UpdateSeat(ctx, _seat); err != nil {
 			return false, err
 		}
+
 		seat = *_seat
 
 		res = reservation
@@ -168,12 +178,17 @@ func (m *eventManager) ConfirmReservation(ctx context.Context, req ConfirmReserv
 }
 
 func (m *eventManager) CancelReservation(ctx context.Context, req CancelReservationRequest) (*CancelReservationResponse, error) {
-	if err := m.reservationRepo.HandleWithTransaction(ctx, func(ctx context.Context, reservationRepo repository.ReservationRepository) (bool, error) {
+	if err := m.transactionDB.HandleWithTransaction(ctx, func(
+		ctx context.Context,
+		eventRepo repository.EventRepository,
+		seatRepo repository.SeatRepository,
+		reservationRepo repository.ReservationRepository,
+	) (bool, error) {
 		reservation, err := reservationRepo.GetReservationForEventAndUser(ctx, req.EventID, req.UserID)
 		if err != nil {
 			return false, err
 		}
-		seat, err := m.seatRepo.GetSeat(ctx, reservation.SeatID)
+		seat, err := seatRepo.GetSeat(ctx, reservation.SeatID)
 		if err != nil {
 			return false, err
 		}
@@ -184,7 +199,7 @@ func (m *eventManager) CancelReservation(ctx context.Context, req CancelReservat
 		}
 
 		seat.Status = repository.SeatStatusAvailable
-		if err := m.seatRepo.UpdateSeat(ctx, seat); err != nil {
+		if err := seatRepo.UpdateSeat(ctx, seat); err != nil {
 			return false, err
 		}
 

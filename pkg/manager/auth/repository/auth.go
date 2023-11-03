@@ -58,3 +58,7 @@ func (r *repository) GetRefreshToken(ctx context.Context, refreshToken string) (
 func (r *repository) Migrate() error {
 	return r.AutoMigrate(&RefreshToken{})
 }
+
+func (r *repository) MigrateDown() error {
+	return r.Migrator().DropTable(&RefreshToken{})
+}

@@ -39,3 +39,7 @@ func (repo *eventRepository) GetEventWithSeats(ctx context.Context, id uuid.UUID
 func (repo *eventRepository) Migrate() error {
 	return repo.AutoMigrate(&Event{})
 }
+
+func (repo *eventRepository) MigrateDown() error {
+	return repo.Migrator().DropTable(&Event{})
+}

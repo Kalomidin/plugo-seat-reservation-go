@@ -50,9 +50,10 @@ func InitHandlers(
 	eventRepo := event_repo.NewEventRepository(db)
 	seatRepo := event_repo.NewSeatRepository(db)
 	reservationRepo := event_repo.NewReservationRepository(db)
+	itemTransactionDB := event_repo.NewTransactionDB(db)
 
 	// run migrations
-	if err := runMigrations(db, &cfg.DB,
+	if err := RunMigrations(db, &cfg.DB,
 		userRepo,
 		authRepo,
 		eventRepo,
@@ -63,6 +64,7 @@ func InitHandlers(
 	}
 
 	userPort := user_manager.NewUserPort(userRepo)
+
 	authManager := auth_manager.NewAuthManager(authRepo, userPort, cfg.Auth)
 	authHandler := auth_handler.NewHandler(authManager)
 	authHttpHandler := auth_handler.NewHttpHandler(ctx, authHandler, middleware)
@@ -73,7 +75,7 @@ func InitHandlers(
 	userHttpHandler := user_handler.NewHttpHandler(ctx, userHandler, middleware)
 	userHttpHandler.Init(ctx, ginEngine)
 
-	eventManager := event_manager.NewEventManager(eventRepo, seatRepo, reservationRepo)
+	eventManager := event_manager.NewEventManager(eventRepo, seatRepo, reservationRepo, itemTransactionDB)
 	eventHandler := event_handler.NewHandler(eventManager)
 	eventHttpHandler := event_handler.NewHttpHandler(ctx, eventHandler, middleware)
 	eventHttpHandler.Init(ctx, ginEngine)
@@ -81,7 +83,7 @@ func InitHandlers(
 	return nil
 }
 
-func runMigrations(db *gorm.DB,
+func RunMigrations(db *gorm.DB,
 	dbConfig postgres.ConfigPostgres,
 	userRepo user_repo.Repository,
 	authRepo auth_repo.Repository,

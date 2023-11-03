@@ -43,6 +43,7 @@ func (p *userPort) CreateOrGetUser(ctx context.Context, req port.CreateOrGetUser
 	return &port.User{
 		ID:       user.ID,
 		Username: user.Username,
+		Password: user.Password,
 	}, nil
 }
 

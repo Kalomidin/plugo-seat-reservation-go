@@ -20,7 +20,7 @@ type Seat struct {
 	Name    string
 	Status  SeatStatus
 	EventID uuid.UUID `gorm:"not null"`
-	Event   Event
+	Version int64     `gorm:"default:0"`
 }
 
 type Reservation struct {
@@ -29,15 +29,13 @@ type Reservation struct {
 	EventID uuid.UUID `gorm:"not null"`
 	SeatID  uuid.UUID `gorm:"not null"`
 	common.CreatedDeleted
-
-	Event Event `gorm:"foreignKey:event_id"`
-	Seat  Seat  `gorm:"foreignKey:seat_id"`
 }
 
 type EventRepository interface {
 	CreateEvent(ctx context.Context, event *Event) error
 	GetEventWithSeats(ctx context.Context, id uuid.UUID) (*Event, error)
 	Migrate() error
+	MigrateDown() error
 }
 
 type SeatRepository interface {
@@ -45,6 +43,7 @@ type SeatRepository interface {
 	GetSeat(ctx context.Context, id uuid.UUID) (*Seat, error)
 	UpdateSeat(ctx context.Context, seat *Seat) error
 	Migrate() error
+	MigrateDown() error
 }
 
 type ReservationRepository interface {
@@ -53,9 +52,13 @@ type ReservationRepository interface {
 	GetUserReservations(ctx context.Context, userID uuid.UUID) ([]Reservation, error)
 	GetReservationForSeat(ctx context.Context, seatID uuid.UUID) (*Reservation, error)
 	GetReservationForEventAndUser(ctx context.Context, eventID uuid.UUID, userID uuid.UUID) (*Reservation, error)
-	HandleWithTransaction(ctx context.Context, fn ReservationTransaction) error
 	DeleteReservation(ctx context.Context, id uuid.UUID) error
 	Migrate() error
+	MigrateDown() error
+}
+
+type TransactionDB interface {
+	HandleWithTransaction(ctx context.Context, fn TransactionCallBack) error
 }
 
 type SeatStatus string
@@ -64,5 +67,3 @@ const (
 	SeatStatusAvailable SeatStatus = "available"
 	SeatStatusReserved  SeatStatus = "reserved"
 )
-
-type ReservationTransaction func(ctx context.Context, reservationRepo ReservationRepository) (bool, error)

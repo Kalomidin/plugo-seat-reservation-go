@@ -19,4 +19,5 @@ type Repository interface {
 	GetUser(ctx context.Context, userId uuid.UUID) (*User, error)
 	GetUserByName(ctx context.Context, username string) (*User, error)
 	Migrate() error
+	MigrateDown() error
 }

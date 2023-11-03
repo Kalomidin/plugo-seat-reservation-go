@@ -20,4 +20,5 @@ type Repository interface {
 	DeleteRefreshToken(ctx context.Context, userId uuid.UUID) error
 	GetRefreshToken(ctx context.Context, refreshToken string) (*RefreshToken, error)
 	Migrate() error
+	MigrateDown() error
 }

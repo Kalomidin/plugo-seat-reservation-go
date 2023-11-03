@@ -48,11 +48,26 @@ git clone https://github.com/Kalomidin/plugo-seat-reservation-go.git
 ./docker-start.sh
 ```
 
-3. Build the repository
+3. Create repo where u want reside the build:
 
 ```bash
 #!/bin/bash
-mkdir bin && go build -o bin ./...
+mkdir bin
 ```
 
-4. Open the postman and start using the endpoints.
+4. Build the repository
+
+```bash
+#!/bin/bash
+go build -o bin ./...
+```
+
+5. Run the builded image
+
+```bash
+#!/bin/bash
+./bin/seat-reservation-api 
+```
+
+
+6. Open the postman and start using the endpoints.

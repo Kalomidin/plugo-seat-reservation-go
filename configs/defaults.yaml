@@ -1,0 +1,14 @@
+---
+
+server:
+  port: 8210
+
+
+
+config:
+  auth:
+    issuer: seat-reservation
+    keyId: keyId
+    key: some-key
+    validDuration: 100h
+    refreshTokenExpiryDuration: 100h

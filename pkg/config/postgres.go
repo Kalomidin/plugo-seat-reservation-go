@@ -6,10 +6,10 @@ import (
 
 type Postgres struct {
 	Alias   string `yaml:"alias"`
-	Address string `yaml:"address"     env:"PG_ADDRESS"   env-default:":5433"`
+	Address string `yaml:"address"     env:"PG_ADDRESS"   env-default:":5432"`
 	// Database defaults to service name when value is ""
 	Host                 string        `yaml:"pghost"      env:"PG_HOST"      env-default:"localhost"`
-	Port                 string        `yaml:"port"        env:"PG_PORT"      env-default:"5433"`
+	Port                 string        `yaml:"port"        env:"PG_PORT"      env-default:"5432"`
 	Database             string        `yaml:"database"    env:"PG_DATABASE"  env-default:"seat-reservation"`
 	Username             string        `yaml:"username"    env:"PG_USERNAME"  env-default:"root"`
 	Password             string        `yaml:"password"    env:"PG_PASSWORD"  env-default:"password"`

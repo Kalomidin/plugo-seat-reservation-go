@@ -174,10 +174,10 @@ func getTestAuthConfig() jwt.Config {
 
 func getTestDBConfig() config.Postgres {
 	return config.Postgres{
-		Address:              ":5433",
+		Address:              ":5432",
 		Host:                 "localhost",
 		Database:             "seat-reservation",
-		Port:                 "5433",
+		Port:                 "5432",
 		Username:             "root",
 		Password:             "password",
 		MaxConns:             10,

@@ -104,8 +104,6 @@ func (s *createReservationSuite) TestCreateReservation_DifferentUserConcurrently
 
 			if _, err := eventManager.CreateReservation(ctx, req); err == nil {
 				atomic.AddInt32(&successCount, 1)
-			} else {
-
 			}
 			work.Done()
 		}()

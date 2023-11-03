@@ -1,0 +1,70 @@
+name: main-workflow
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.19
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          skip-go-installation: true
+          version: latest
+          args: --timeout 3m --verbose
+
+  unit-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: circleci/postgres:13
+        env:
+          POSTGRES_PASSWORD: password
+          POSTGRES_USER: root
+          POSTGRES_DB: seat-reservation
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.19
+
+      - name: Make test report output directory
+        run: mkdir -p test-results/go/
+
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@latest
+
+      - name: Execute tests
+        run: gotestsum --junitfile test-results/go/report.xml -- -p 1 -coverprofile=coverage.out ./...
+        timeout-minutes: 15
+
+      - name: Store test results
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-results
+          path: test-results
+
+      - name: Store coverage results
+        uses: actions/upload-artifact@v2
+        with:
+          name: coverage
+          path: coverage.out

@@ -35,3 +35,4 @@ There are other possible scenarios to also consider that are hard to test:
 
 - **Scenario 4**: Server disconnects right after creating transaction and performing part of the create reservation operation. In this scenario, transaction will be rolled back in postgres direct after server disconnection
 - **Scenario 5**: Server creates DB transaction and goes into infinite loop before finishing transaction. In this scenario, postgresDB will rollback after `idle_in_transaction_session_timeout` period
+- **Scenario 6**: It is possible that one user is canceling and other trying to reserve the seat. If they are done concurrently, there is a  chance that one is in the middle of cancel fails before finishing the all cancelation steps giving way out to other user to reserve it. For example, we could delete reservation of the user and not updated all tables to correct state and other user can create reservation.

@@ -5,7 +5,6 @@ import (
 	"seat-reservation/common"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type Event struct {
@@ -29,9 +28,10 @@ type Reservation struct {
 	UserID  uuid.UUID
 	EventID uuid.UUID `gorm:"not null"`
 	SeatID  uuid.UUID `gorm:"not null"`
-	Event   Event     `gorm:"foreignKey:event_id"`
-	Seat    Seat      `gorm:"foreignKey:seat_id"`
 	common.CreatedDeleted
+
+	Event Event `gorm:"foreignKey:event_id"`
+	Seat  Seat  `gorm:"foreignKey:seat_id"`
 }
 
 type EventRepository interface {
@@ -53,7 +53,7 @@ type ReservationRepository interface {
 	GetUserReservations(ctx context.Context, userID uuid.UUID) ([]Reservation, error)
 	GetReservationForSeat(ctx context.Context, seatID uuid.UUID) (*Reservation, error)
 	GetReservationForEventAndUser(ctx context.Context, eventID uuid.UUID, userID uuid.UUID) (*Reservation, error)
-	HandleWithTransaction(ctx context.Context, fn Transaction) error
+	HandleWithTransaction(ctx context.Context, fn ReservationTransaction) error
 	DeleteReservation(ctx context.Context, id uuid.UUID) error
 	Migrate() error
 }
@@ -65,4 +65,4 @@ const (
 	SeatStatusReserved  SeatStatus = "reserved"
 )
 
-type Transaction func(ctx context.Context, tx *gorm.DB) error
+type ReservationTransaction func(ctx context.Context, reservationRepo ReservationRepository) (bool, error)

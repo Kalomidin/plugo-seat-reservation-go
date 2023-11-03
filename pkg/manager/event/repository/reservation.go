@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -63,17 +64,26 @@ func (repo *reservationRepository) GetReservationForEventAndUser(ctx context.Con
 	return &reservation, nil
 }
 
-func (repo *reservationRepository) HandleWithTransaction(ctx context.Context, fn Transaction) error {
+func (repo *reservationRepository) HandleWithTransaction(ctx context.Context, fn ReservationTransaction) error {
 	tx := repo.Begin()
 	if tx.Error != nil {
+		tx.Rollback()
+		fmt.Printf("committing transaction4\n")
 		return tx.Error
 	}
-	err := fn(ctx, tx)
-	if err != nil {
+
+	commit, err := fn(ctx, NewReservationRepository(tx))
+	if err != nil || !commit {
 		tx.Rollback()
+		fmt.Printf("committing transaction2\n")
 		return err
 	}
-	tx.Commit()
+
+	err = tx.Commit().Error
+	if err != nil {
+		fmt.Printf("Error while committing transaction\n")
+		return err
+	}
 	return nil
 }
 
@@ -82,5 +92,9 @@ func (repo *reservationRepository) DeleteReservation(ctx context.Context, id uui
 }
 
 func (repo *reservationRepository) Migrate() error {
-	return repo.AutoMigrate(&Reservation{})
+	if err := repo.AutoMigrate(&Reservation{}); err != nil {
+		return err
+	}
+	return repo.
+		Exec(`CREATE UNIQUE INDEX idx_seat_id_deleted_at_null ON reservation(seat_id) WHERE deleted_at IS NULL;`).Error
 }

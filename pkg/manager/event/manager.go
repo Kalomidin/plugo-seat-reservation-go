@@ -3,6 +3,7 @@ package event_manager
 import (
 	"context"
 	"fmt"
+	"log"
 	"seat-reservation/pkg/manager/event/repository"
 
 	"gorm.io/gorm"
@@ -83,39 +84,47 @@ func (m *eventManager) GetEvent(ctx context.Context, req GetEventRequest) (*Even
 func (m *eventManager) CreateReservation(ctx context.Context, req CreateReservationRequest) (*CreateReservationResponse, error) {
 	var res repository.Reservation
 	var seat repository.Seat
-	if err := m.reservationRepo.HandleWithTransaction(ctx, func(ctx context.Context, db *gorm.DB) error {
-		existingReservation, err := m.reservationRepo.GetReservationForEventAndUser(ctx, req.EventID, req.UserID)
-		if err != nil && err != gorm.ErrRecordNotFound {
-			return err
-		}
-		if existingReservation != nil || err != gorm.ErrRecordNotFound {
-			return fmt.Errorf("user already has reservation for this event")
+	if err := m.reservationRepo.HandleWithTransaction(ctx, func(ctx context.Context, reservationRepo repository.ReservationRepository) (bool, error) {
+		existingReservation, err := reservationRepo.GetReservationForEventAndUser(ctx, req.EventID, req.UserID)
+		if err != gorm.ErrRecordNotFound {
+			if err == nil {
+				res = *existingReservation
+				_seat, err := m.seatRepo.GetSeat(ctx, req.SeatID)
+				if err != nil {
+					return false, err
+				}
+				seat = *_seat
+			}
+
+			return false, err
 		}
 
 		_seat, err := m.seatRepo.GetSeat(ctx, req.SeatID)
 		if err != nil {
-			return err
+			return false, err
 		}
 		if _seat.Status != repository.SeatStatusAvailable {
-			return fmt.Errorf("seat is not available")
+			return false, fmt.Errorf("seat is not available")
 		}
-		_seat.Status = repository.SeatStatusReserved
-
-		if err := m.seatRepo.UpdateSeat(ctx, _seat); err != nil {
-			return err
-		}
-		seat = *_seat
 
 		reservation := repository.Reservation{
 			EventID: req.EventID,
 			SeatID:  req.SeatID,
 			UserID:  req.UserID,
 		}
-		if err := m.reservationRepo.CreateReservation(ctx, &reservation); err != nil {
-			return err
+		if err := reservationRepo.CreateReservation(ctx, &reservation); err != nil {
+			return false, err
 		}
+
+		_seat.Status = repository.SeatStatusReserved
+
+		if err := m.seatRepo.UpdateSeat(ctx, _seat); err != nil {
+			return false, err
+		}
+		seat = *_seat
+
 		res = reservation
-		return nil
+		return true, nil
 	}); err != nil {
 		return nil, err
 	}
@@ -159,23 +168,30 @@ func (m *eventManager) ConfirmReservation(ctx context.Context, req ConfirmReserv
 }
 
 func (m *eventManager) CancelReservation(ctx context.Context, req CancelReservationRequest) (*CancelReservationResponse, error) {
-	if err := m.reservationRepo.HandleWithTransaction(ctx, func(ctx context.Context, db *gorm.DB) error {
-		reservation, err := m.reservationRepo.GetReservationForEventAndUser(ctx, req.EventID, req.UserID)
+	if err := m.reservationRepo.HandleWithTransaction(ctx, func(ctx context.Context, reservationRepo repository.ReservationRepository) (bool, error) {
+		reservation, err := reservationRepo.GetReservationForEventAndUser(ctx, req.EventID, req.UserID)
 		if err != nil {
-			return err
-		}
-		if err := m.reservationRepo.DeleteReservation(ctx, reservation.ID); err != nil {
-			return err
+			return false, err
 		}
 		seat, err := m.seatRepo.GetSeat(ctx, reservation.SeatID)
 		if err != nil {
-			return err
+			return false, err
 		}
+		// We should never have seat as available if there is a reservation for it
+		if seat.Status == repository.SeatStatusAvailable {
+			// TODO: We should never get here, but we should handle this case more properly than panicing
+			log.Panicf("seat is available but there is a reservation for it")
+		}
+
 		seat.Status = repository.SeatStatusAvailable
 		if err := m.seatRepo.UpdateSeat(ctx, seat); err != nil {
-			return err
+			return false, err
 		}
-		return nil
+
+		if err := reservationRepo.DeleteReservation(ctx, reservation.ID); err != nil {
+			return false, err
+		}
+		return true, nil
 	}); err != nil {
 		return nil, err
 	}

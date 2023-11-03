@@ -20,7 +20,7 @@ Repository provides following functionalities:
 ### Avoiding Double Booking
 
 It prevents users from performing double booking for the same seat.
-Specific scenarios where double booking could occur and methods designed to prevent it possible to find within tests.
+Specific scenarios where double booking could occur and methods designed to prevent it possible to find within tests in [here](idle_in_transaction_session_timeout).
 
 ### Environment
 

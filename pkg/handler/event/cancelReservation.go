@@ -2,6 +2,7 @@ package event_handler
 
 import (
 	"net/http"
+	"seat-reservation/common"
 	event_manager "seat-reservation/pkg/manager/event"
 
 	"github.com/gin-gonic/gin"
@@ -23,7 +24,7 @@ func (h *handler) CancelReservation(ctx *gin.Context) (*CancelReservationRespons
 	if err != nil {
 		return nil, err
 	}
-	userId, err := uuid.Parse(ctx.Param("user_id"))
+	userId, err := common.GetUserId(ctx.Request.Context())
 	if err != nil {
 		return nil, err
 	}

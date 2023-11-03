@@ -135,9 +135,9 @@ func (m *eventManager) ConfirmReservation(ctx context.Context, req ConfirmReserv
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return &ConfirmReservationResponse{
-				EventID:    reservation.EventID,
-				UserID:     reservation.UserID,
-				SeatID:     reservation.SeatID,
+				EventID:    req.EventID,
+				UserID:     req.UserID,
+				SeatID:     req.SeatID,
 				IsReserved: false,
 			}, nil
 		}

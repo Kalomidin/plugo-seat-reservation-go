@@ -30,7 +30,7 @@ func (h *handler) ConfirmReservation(ctx *gin.Context) (*ConfirmReservationRespo
 	if err != nil {
 		return nil, err
 	}
-	seatID, err := uuid.Parse(ctx.Param("seatId"))
+	seatID, err := uuid.Parse(ctx.Query("seatId"))
 	if err != nil {
 		return nil, err
 	}

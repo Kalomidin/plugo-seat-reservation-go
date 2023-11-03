@@ -1,6 +1,7 @@
 package event_handler
 
 import (
+	"net/http"
 	"seat-reservation/common"
 	event_manager "seat-reservation/pkg/manager/event"
 
@@ -15,7 +16,16 @@ type CreateReservationRequest struct {
 type CreateReservationResponse struct {
 	ReservationID uuid.UUID `json:"reservationId"`
 	EventID       uuid.UUID `json:"eventId"`
-	Seat
+	Seat          Seat      `json:"seat"`
+}
+
+func (h *HttpHandler) CreateReservation(ctx *gin.Context, req *http.Request) (interface{}, error) {
+	var createReservationRequest CreateReservationRequest
+	if err := ctx.ShouldBindJSON(&createReservationRequest); err != nil {
+		return nil, err
+	}
+	resp, err := h.handler.CreateReservation(ctx, createReservationRequest)
+	return resp, err
 }
 
 func (h *handler) CreateReservation(ctx *gin.Context, req CreateReservationRequest) (*CreateReservationResponse, error) {

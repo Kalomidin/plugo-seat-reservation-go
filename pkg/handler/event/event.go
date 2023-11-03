@@ -34,14 +34,15 @@ func NewHttpHandler(ctx context.Context, h EventHandler, middleware common.Middl
 func (c *HttpHandler) Init(ctx context.Context, router *gin.Engine) {
 	routes := map[string]map[string]common.HandlerFunc{
 		"POST": {
-			"": c.middleware.HandlerWithAuth(c.CreateEvent),
+			"":                 c.middleware.HandlerWithAuth(c.CreateEvent),
+			"/:id/reservation": c.middleware.HandlerWithAuth(c.CreateReservation),
 		},
 		"GET": {
-			"/:id": c.middleware.HandlerWithAuth(c.GetEvent),
-			"/:id/reservation/confirm?seatId=:seatId": c.middleware.HandlerWithAuth(c.ConfirmReservation),
+			"/:id":                     c.middleware.HandlerWithAuth(c.GetEvent),
+			"/:id/reservation/confirm": c.middleware.HandlerWithAuth(c.ConfirmReservation),
 		},
 		"DELETE": {
-			"/:id": c.middleware.HandlerWithAuth(c.CancelReservation),
+			"/:id/reservation": c.middleware.HandlerWithAuth(c.CancelReservation),
 		},
 	}
 	for method, route := range routes {

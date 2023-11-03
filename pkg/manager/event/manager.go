@@ -84,6 +84,14 @@ func (m *eventManager) CreateReservation(ctx context.Context, req CreateReservat
 	var res repository.Reservation
 	var seat repository.Seat
 	if err := m.reservationRepo.HandleWithTransaction(ctx, func(ctx context.Context, db *gorm.DB) error {
+		existingReservation, err := m.reservationRepo.GetReservationForEventAndUser(ctx, req.EventID, req.UserID)
+		if err != nil && err != gorm.ErrRecordNotFound {
+			return err
+		}
+		if existingReservation != nil || err != gorm.ErrRecordNotFound {
+			return fmt.Errorf("user already has reservation for this event")
+		}
+
 		_seat, err := m.seatRepo.GetSeat(ctx, req.SeatID)
 		if err != nil {
 			return err

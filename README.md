@@ -1,9 +1,9 @@
-# Sear Reservation API
+# Seat Reservation API
 
 ## Introduction
 
 This repository provides sample endpoints for creating event and performing seat reservations.
-Each user is allowed to perform at most 1 seat.
+Each user is allowed to reserve at most 1 seat.
 
 ## Features
 
@@ -69,5 +69,6 @@ go build -o bin ./...
 ./bin/seat-reservation-api 
 ```
 
-
 6. Open the postman and start using the endpoints.
+
+If you want to have docker image in MacOS, you can use build scripts provided.

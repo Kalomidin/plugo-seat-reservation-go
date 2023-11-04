@@ -33,7 +33,7 @@ func (repo *seatRepository) GetSeat(ctx context.Context, id uuid.UUID) (*Seat, e
 }
 
 func (repo *seatRepository) UpdateSeat(ctx context.Context, seat *Seat) error {
-	res := repo.Where("id = ? AND version = ?", seat.ID, seat.Version).Updates(seat).Update("version", gorm.Expr("version + 1"))
+	res := repo.Where("id = ? ", seat.ID).Updates(seat)
 	if res.Error != nil {
 		return res.Error
 	}

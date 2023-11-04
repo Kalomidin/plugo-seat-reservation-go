@@ -3,6 +3,7 @@ package event_test
 import (
 	"seat-reservation/integrationtestsuite"
 	event_manager "seat-reservation/pkg/manager/event"
+	event_repo "seat-reservation/pkg/manager/event/repository"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -146,6 +147,7 @@ func (s *cancelReservationSuite) TestCancelReservation_MultipleCancelAndReserve(
 		UserID:  firstUser.ID,
 		SeatID:  event.Seats[0].ID,
 	}
+	initialSeat := event.Seats[0]
 
 	_, err := eventManager.CreateReservation(ctx, req)
 	s.Require().NoError(err)
@@ -162,7 +164,7 @@ func (s *cancelReservationSuite) TestCancelReservation_MultipleCancelAndReserve(
 		UserID:  firstUser.ID,
 	}
 
-	workCount := 30
+	workCount := 100
 	work := sync.WaitGroup{}
 	var cancelSuccessCount int32 = 0
 	var createSuccessCount int32 = 0
@@ -189,4 +191,17 @@ func (s *cancelReservationSuite) TestCancelReservation_MultipleCancelAndReserve(
 
 	s.Require().Equal(int32(1), cancelSuccessCount)
 	s.Require().Greater(createSuccessCount, int32(0))
+
+	updatedEvent, err := eventManager.GetEvent(ctx, event_manager.GetEventRequest{
+		EventID: event.ID,
+	})
+	for _, seat := range updatedEvent.Seats {
+		if seat.ID == initialSeat.ID {
+			s.Require().Equal(event_repo.SeatStatusReserved, seat.Status)
+		}
+	}
+
+	reservations, err := s.ReservationRepo.GetReservationsForEvent(ctx, req.EventID)
+	s.Require().NoError(err)
+	s.Require().Equal(1, len(reservations))
 }

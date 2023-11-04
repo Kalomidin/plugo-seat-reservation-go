@@ -20,7 +20,6 @@ type Seat struct {
 	Name    string
 	Status  SeatStatus
 	EventID uuid.UUID `gorm:"not null"`
-	Version int64     `gorm:"default:0"`
 }
 
 type Reservation struct {

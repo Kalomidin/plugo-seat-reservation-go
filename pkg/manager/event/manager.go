@@ -3,7 +3,6 @@ package event_manager
 import (
 	"context"
 	"fmt"
-	"log"
 	"seat-reservation/pkg/manager/event/repository"
 
 	"gorm.io/gorm"
@@ -71,8 +70,9 @@ func (m *eventManager) GetEvent(ctx context.Context, req GetEventRequest) (*Even
 	var seats []Seat = make([]Seat, len(event.Seats))
 	for i, seat := range event.Seats {
 		seats[i] = Seat{
-			ID:   seat.ID,
-			Name: seat.Name,
+			ID:     seat.ID,
+			Name:   seat.Name,
+			Status: seat.Status,
 		}
 	}
 	return &Event{
@@ -192,10 +192,10 @@ func (m *eventManager) CancelReservation(ctx context.Context, req CancelReservat
 		if err != nil {
 			return false, err
 		}
-		// We should never have seat as available if there is a reservation for it
+
+		// if cancelation done after just getting the seat
 		if seat.Status == repository.SeatStatusAvailable {
-			// TODO: We should never get here, but we should handle this case more properly than panicing
-			log.Panicf("seat is available but there is a reservation for it")
+			return false, fmt.Errorf("reservation already canceled")
 		}
 
 		seat.Status = repository.SeatStatusAvailable
